@@ -1,12 +1,13 @@
 ﻿'use client';
 
-import { useEffect, useRef, useState, type FocusEvent, type FormEvent, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FocusEvent, type FormEvent, type PointerEvent } from 'react';
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Check, Github, Linkedin, Mail, Shuffle, Sparkles, Star } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import ChapterFilm from './chapter-film';
+import ChapterFilm, { careerStops, type ChapterMoment } from './chapter-film';
 import { scrollAfterWheel } from './chapter-scroll';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
+import SkillFlight from './skill-flight';
 
 const email = 'chakravartysamridhi@gmail.com';
 const github = 'https://github.com/samridhichakravarty';
@@ -51,6 +52,10 @@ const roles = [
     stamp: 'Client solutions',
     description: 'Work with clients to understand their requirements and with cross-functional teams to turn those requirements into product features. Maintain and improve company websites across UI, content, and functionality.',
   },
+  {
+    company: 'Atlass Partners',
+    role: 'AI Engineer',
+  },
 ];
 
 const groups = [
@@ -59,8 +64,7 @@ const groups = [
   { name: 'Backend & data', skills: ['Node.js', 'REST APIs', 'Backend Integration', 'MongoDB', 'MySQL', 'Database Fundamentals'] },
   { name: 'AI & tools', skills: ['AI Fundamentals', 'Data Science Fundamentals', 'AI API Integration', 'Git', 'GitHub', 'Vercel', 'Cloudinary'] },
 ];
-const allSkills = groups.flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })))
-  .map((skill, index) => ({ ...skill, direction: index % 4 }));
+const allSkills = groups.flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })));
 
 function ChapterLabel({ children }: { children: string }) {
   return <p className="chapter-label"><span aria-hidden="true" />{children}</p>;
@@ -108,24 +112,24 @@ function About({ sticker, count }: { sticker: React.ReactNode; count: number }) 
         </div>
         <div className="book-chamber">
           <div className="book-pages">
-            <article className="book-page book-left">
+            <figure className="book-portrait">
+              <img src="/media/chapters/samridhi-portrait.webp" alt="Samridhi wearing pink sunglasses against a blue sky" width={960} height={1050} loading="lazy" />
+              <figcaption>Samridhi Chakravarty</figcaption>
+            </figure>
+            <article className="book-bio">
               <h3>Hi, I’m Samridhi.</h3>
               <p>I’m <strong>Samridhi Chakravarty</strong>, a Computer Science Engineering student specializing in AI and Data Science at Poornima University in Jaipur.</p>
               <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
-              <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
+              <div className="book-bio-tools">
+                <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
+                <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
+                  <span>Field note</span>
+                  <span className="flip-front">Turn the page <ArrowUpRight size={17} /></span>
+                  <span className="flip-back" id="scrapbook-note" aria-hidden={!note}>B.Tech · 2023–2027</span>
+                </button>
+              </div>
             </article>
-            <div className="book-page book-right">
-              <figure className="book-polaroid">
-                <img src="/media/chapters/about.webp" alt="" width={1040} height={585} loading="lazy" />
-                <figcaption>Poornima University · Jaipur</figcaption>
-              </figure>
-              {sticker}
-              <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
-                <span>Field note</span>
-                <span className="flip-front">Turn the page <ArrowUpRight size={17} /></span>
-                <span className="flip-back" id="scrapbook-note" aria-hidden={!note}>B.Tech · 2023–2027</span>
-              </button>
-            </div>
+            {sticker}
           </div>
           <ChapterFilm chapter="about" className="book-film" />
         </div>
@@ -151,7 +155,7 @@ function ProjectArt({ children }: { children: React.ReactNode }) {
   return (
     <div className="project-art" onPointerMove={tilt} onPointerLeave={() => art.current?.removeAttribute('style')}>
       <span className="concept-tag">Interactive concept</span>
-      <div className="project-art-inner" ref={art}>{children}</div>
+      <div className="project-folio"><div className="project-art-inner" ref={art}>{children}</div></div>
     </div>
   );
 }
@@ -227,45 +231,60 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
 }
 
 function Experience() {
+  const section = useRef<HTMLElement>(null);
+  const [active, setActive] = useState(-1);
+
   function visitMilestone(index: number) {
+    const root = section.current;
+    if (root?.hasAttribute('data-arcade-pin')) {
+      scrollAfterWheel(() => {
+        const header = document.querySelector('header')?.offsetHeight ?? 0;
+        const start = root.getBoundingClientRect().top + window.scrollY - header;
+        const distance = root.offsetHeight - window.innerHeight + header;
+        window.scrollTo({ top: start + distance * careerStops[index], behavior: 'smooth' });
+      });
+      return;
+    }
+
     const card = document.getElementById('career-' + index);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     card?.focus({ preventScroll: true });
+    setActive(index);
     scrollAfterWheel(() => card?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'nearest' }));
   }
 
   return (
-    <section className="chapter arcade story-arcade" data-chapter id="experience" tabIndex={-1} aria-labelledby="arcade-title">
+    <section ref={section} className="chapter arcade story-arcade" data-chapter id="experience" tabIndex={-1} aria-labelledby="arcade-title">
       <div className="chapter-inner arcade-content">
-        <ChapterLabel>Experience</ChapterLabel>
-        <h2 className="chapter-title" id="arcade-title">Leveling up <em>in real life.</em></h2>
-        <div className="arcade-screen">
-          <ChapterFilm chapter="experience" className="arcade-world" />
-          <div className="arcade-route" aria-hidden="true">
-            <i /><i /><i />
-            <div className="arcade-marker"><span><Star size={20} fill="currentColor" /></span></div>
+        <div className="arcade-heading">
+          <ChapterLabel>Experience</ChapterLabel>
+          <h2 className="chapter-title" id="arcade-title">Leveling up <em>in real life.</em></h2>
+        </div>
+        <div className="arcade-frame">
+          <div className="arcade-screen">
+            <ChapterFilm chapter="experience" className="arcade-world" onCareerChange={setActive} />
           </div>
+          <ol className="arcade-path">
+            {roles.map(({ company, role, dates, stamp, description }, index) => (
+              <li className={'arcade-stop stop-' + index} key={role} data-landed={active === index || undefined}>
+                <article className="career-card" id={'career-' + index} tabIndex={-1} aria-label={company + ', ' + role}>
+                  <p className="career-level"><span>Level 0{index + 1}</span>{dates && <span>{dates}</span>}</p>
+                  <h3>{company}</h3>
+                  <p className="career-role">{role}{index < 2 ? ' · Jaipur' : ''}</p>
+                  {description && <p>{description}</p>}
+                  {stamp && <span className="career-stamp"><Star size={13} />{stamp}</span>}
+                </article>
+              </li>
+            ))}
+          </ol>
         </div>
         <div className="arcade-deck">
           <p className="arcade-caption">Career milestones</p>
           <div className="level-controls" role="group" aria-label="Jump to a career milestone">
-            {roles.map(({ company }, index) => <button key={company} type="button" onClick={() => visitMilestone(index)}>Level 0{index + 1}<span className="sr-only"> {company}</span></button>)}
+            {roles.map(({ company, role }, index) => <button key={role} type="button" aria-controls={'career-' + index} aria-pressed={active === index} onClick={() => visitMilestone(index)}>Level 0{index + 1}<span className="sr-only"> {company}, {role}</span></button>)}
           </div>
+          <div className="arcade-finish" aria-hidden="true"><Star size={19} fill="currentColor" /><span>Level complete</span></div>
         </div>
-        <ol className="arcade-path">
-          {roles.map(({ company, role, dates, stamp, description }, index) => (
-            <li className={'arcade-stop stop-' + index} key={company}>
-              <article className="career-card" id={'career-' + index} tabIndex={-1} aria-label={company + ', ' + role}>
-                <p className="career-level"><span>Level 0{index + 1}</span><span>{dates}</span></p>
-                <h3>{company}</h3>
-                <p className="career-role">{role} · Jaipur</p>
-                <p>{description}</p>
-                <span className="career-stamp"><Star size={13} />{stamp}</span>
-              </article>
-            </li>
-          ))}
-        </ol>
-        <div className="arcade-finish" aria-hidden="true"><Star size={19} fill="currentColor" /><span>Level complete</span></div>
       </div>
     </section>
   );
@@ -278,6 +297,8 @@ function Skills({ desktop }: { desktop: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [engaged, setEngaged] = useState(false);
   const bounds = useRef<HTMLDivElement>(null);
+  const flight = useRef<((moment: ChapterMoment) => void) | null>(null);
+  const trackFlight = useCallback((moment: ChapterMoment) => flight.current?.(moment), []);
   const visibleSkills = category === 'All' ? skills : skills.filter(skill => skill.group === category);
 
   function shuffle() {
@@ -307,28 +328,27 @@ function Skills({ desktop }: { desktop: boolean }) {
           <button type="button" className="shuffle-button" onClick={shuffle}><Shuffle size={17} /> Shuffle</button>
         </div>
         <div className="orbit-board" ref={bounds}>
-          <ChapterFilm chapter="skills" className="lab-world" />
+          <ChapterFilm chapter="skills" className="lab-world" onMotion={trackFlight} />
           <div className="orbit-grid">
             <AnimatePresence initial={false} mode="popLayout">
-              {visibleSkills.map(({ name, color, group, direction }) => (
-                <motion.div key={name} layout={desktop ? 'position' : false} className="orbit-item" data-direction={direction}
+              {visibleSkills.map(({ name, color, group }) => (
+                <motion.div key={name} layout={desktop ? 'position' : false} className="orbit-item"
                   initial={desktop ? { opacity: 0 } : false} animate={{ opacity: 1 }}
                   exit={desktop ? { opacity: 0 } : undefined}
                   transition={{ opacity: { duration: desktop ? 0.16 : 0 }, layout: { type: 'spring', stiffness: 340, damping: 33 } }}
                 >
-                  <div className="orbit-entry">
-                    <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group}
-                      drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
-                      dragTransition={{ bounceStiffness: 470, bounceDamping: 34 }}
-                      whileDrag={{ scale: 1.05, zIndex: 5 }} whileHover={desktop ? { scale: 1.025 } : undefined}
-                      aria-pressed={selected === name}
-                      onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
-                    ><span aria-hidden="true" />{name}</motion.button>
-                  </div>
+                  <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group} data-flight-target={name}
+                    drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
+                    dragTransition={{ bounceStiffness: 470, bounceDamping: 34 }}
+                    whileDrag={{ scale: 1.05, zIndex: 5 }} whileHover={desktop ? { scale: 1.025 } : undefined}
+                    aria-pressed={selected === name}
+                    onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
+                  ><span aria-hidden="true" />{name}</motion.button>
                 </motion.div>
               ))}
             </AnimatePresence>
           </div>
+          <SkillFlight ref={flight} />
           <div className="orbit-exit" aria-hidden="true">✦ <span>✧</span> ✦</div>
         </div>
         <p className="lab-status" aria-live="polite">{visibleSkills.length} {visibleSkills.length === 1 ? 'skill' : 'skills'}{category !== 'All' ? ' · ' + category : ''}{shuffles > 0 ? ' · Shuffle ' + shuffles : ''}{selected ? ' · ' + selected + ' selected' : ''}</p>
@@ -368,28 +388,30 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
         <ChapterLabel>Contact</ChapterLabel>
         <h2 className="chapter-title" id="post-title">Send some <em>good vibes.</em></h2>
         <div className="post-chamber">
-          <form className="postcard-form" data-tone={tone} data-draft={sentDraft || undefined}
-            action={'mailto:' + email} method="post" encType="text/plain"
-            onSubmit={openEmail} onChange={() => { setStatus(''); setSentDraft(false); }}>
-            <div className="postcard-tools">
-              <h3>Your postcard</h3>
-              <div className="postcard-swatches" role="group" aria-label="Postcard color">
-                {['cream', 'pink', 'lavender'].map(color => <button type="button" key={color} data-swatch={color} aria-label={color + ' postcard'} aria-pressed={tone === color} onClick={() => { setTone(color); setOpen(true); }} />)}
+          <div className="postcard-mount">
+            <form className="postcard-form" data-tone={tone} data-draft={sentDraft || undefined}
+              action={'mailto:' + email} method="post" encType="text/plain"
+              onSubmit={openEmail} onFocus={() => setOpen(true)} onChange={() => { setStatus(''); setSentDraft(false); }}>
+              <div className="postcard-tools">
+                <h3>Your postcard</h3>
+                <div className="postcard-swatches" role="group" aria-label="Postcard color">
+                  {['cream', 'pink', 'lavender'].map(color => <button type="button" key={color} data-swatch={color} aria-label={color + ' postcard'} aria-pressed={tone === color} onClick={() => { setTone(color); setOpen(true); }} />)}
+                </div>
               </div>
-            </div>
-            {decorated && <img className="postcard-decoration" src="/media/heart.webp" width={49} height={40} alt="" />}
-            <label htmlFor="postcard-name">Your name <small>(optional)</small></label>
-            <input id="postcard-name" name="sender" autoComplete="name" maxLength={100} placeholder="Your name" />
-            <label htmlFor="postcard-message">Your message</label>
-            <textarea id="postcard-message" name="message" placeholder="Tell me what you have in mind." rows={4} maxLength={1600} required />
-            <div className="postcard-actions">
-              <button className="post-submit" type="submit">Send message <ArrowUpRight size={18} /></button>
-              <button className="post-decorate" type="button" aria-pressed={decorated} onClick={() => { setDecorated(!decorated); setOpen(true); }}>
-                <Sparkles size={16} /> {decorated ? 'Remove sticker' : 'Add sticker'}
-              </button>
-            </div>
-            <p className="post-status" role="status">{status || 'Opens a draft in your email app.'}</p>
-          </form>
+              {decorated && <img className="postcard-decoration" src="/media/heart.webp" width={49} height={40} alt="" />}
+              <label htmlFor="postcard-name">Your name <small>(optional)</small></label>
+              <input id="postcard-name" name="sender" autoComplete="name" maxLength={100} placeholder="Your name" />
+              <label htmlFor="postcard-message">Your message</label>
+              <textarea id="postcard-message" name="message" placeholder="Tell me what you have in mind." rows={4} maxLength={1600} required />
+              <div className="postcard-actions">
+                <button className="post-submit" type="submit">Send message <ArrowUpRight size={18} /></button>
+                <button className="post-decorate" type="button" aria-pressed={decorated} onClick={() => { setDecorated(!decorated); setOpen(true); }}>
+                  <Sparkles size={16} /> {decorated ? 'Remove sticker' : 'Add sticker'}
+                </button>
+              </div>
+              <p className="post-status" role="status">{status || 'Opens a draft in your email app.'}</p>
+            </form>
+          </div>
           <ChapterFilm chapter="contact" className="post-film" open={open} />
           {sticker}
           <button className="envelope-button" type="button" aria-pressed={open} onClick={() => setOpen(!open)}>
