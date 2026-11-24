@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, type FocusEvent, type FormEvent, type PointerEvent } from 'react';
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Check, Github, Linkedin, Mail, Shuffle, Sparkles, Star } from 'lucide-react';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import ChapterFilm, { projectStops } from './chapter-film';
+import ChapterFilm from './chapter-film';
+import { scrollAfterWheel } from './chapter-scroll';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
 
 const email = 'chakravartysamridhi@gmail.com';
@@ -58,7 +59,8 @@ const groups = [
   { name: 'Backend & data', skills: ['Node.js', 'REST APIs', 'Backend Integration', 'MongoDB', 'MySQL', 'Database Fundamentals'] },
   { name: 'AI & tools', skills: ['AI Fundamentals', 'Data Science Fundamentals', 'AI API Integration', 'Git', 'GitHub', 'Vercel', 'Cloudinary'] },
 ];
-const allSkills = groups.flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })));
+const allSkills = groups.flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })))
+  .map((skill, index) => ({ ...skill, direction: index % 4 }));
 
 function ChapterLabel({ children }: { children: string }) {
   return <p className="chapter-label"><span aria-hidden="true" />{children}</p>;
@@ -137,9 +139,13 @@ function ProjectArt({ children }: { children: React.ReactNode }) {
 
   function tilt(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType !== 'mouse') return;
+    if ((event.target as Element).closest('.mock-window')) {
+      art.current?.removeAttribute('style');
+      return;
+    }
     const bounds = event.currentTarget.getBoundingClientRect();
-    art.current?.style.setProperty('--tilt-x', ((0.5 - (event.clientY - bounds.top) / bounds.height) * 9) + 'deg');
-    art.current?.style.setProperty('--tilt-y', (((event.clientX - bounds.left) / bounds.width - 0.5) * 10) + 'deg');
+    art.current?.style.setProperty('--tilt-x', ((0.5 - (event.clientY - bounds.top) / bounds.height) * 5) + 'deg');
+    art.current?.style.setProperty('--tilt-y', (((event.clientX - bounds.left) / bounds.width - 0.5) * 6) + 'deg');
   }
 
   return (
@@ -157,19 +163,25 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
   function goToProject(index: number, behavior: ScrollBehavior) {
     const root = section.current;
     if (!root?.hasAttribute('data-gallery')) return;
-    const header = document.querySelector('header')?.offsetHeight ?? 0;
-    const start = root.getBoundingClientRect().top + window.scrollY - header;
-    const distance = root.offsetHeight - window.innerHeight + header;
-    window.scrollTo({ top: start + projectStops[index] * distance, behavior });
+    scrollAfterWheel(() => {
+      const offset = Number.parseFloat(root.style.getPropertyValue(index === 0 ? '--gallery-first' : '--gallery-second'));
+      if (!Number.isFinite(offset)) return;
+      const header = document.querySelector('header')?.offsetHeight ?? 0;
+      const start = root.getBoundingClientRect().top + window.scrollY - header;
+      window.scrollTo({ top: start + offset, behavior });
+    });
   }
 
   function keepFocusInView(event: FocusEvent<HTMLDivElement>) {
     if (!event.target.matches(':focus-visible')) return;
     const panel = event.target.closest<HTMLElement>('[data-project]');
-    const percent = Number(section.current?.style.getPropertyValue('--gallery-progress'));
-    if (!panel || !Number.isFinite(percent)) return;
+    const root = section.current;
+    if (!panel || !root?.hasAttribute('data-gallery')) return;
+    const visible = event.currentTarget.getBoundingClientRect();
+    const bounds = event.target.getBoundingClientRect();
     const index = Number(panel.dataset.project);
-    if (Math.abs(percent - index) > 0.05 || Number(section.current?.style.getPropertyValue('--chapter-progress')) < 0.34) goToProject(index, 'instant');
+    const covered = Number(root.style.getPropertyValue('--chapter-handoff')) < 0.98;
+    if (covered || bounds.left < visible.left + 3 || bounds.right > visible.right - 3) goToProject(index, 'instant');
   }
 
   return (
@@ -219,7 +231,7 @@ function Experience() {
     const card = document.getElementById('career-' + index);
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     card?.focus({ preventScroll: true });
-    card?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'nearest' });
+    scrollAfterWheel(() => card?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'nearest' }));
   }
 
   return (
@@ -229,7 +241,10 @@ function Experience() {
         <h2 className="chapter-title" id="arcade-title">Leveling up <em>in real life.</em></h2>
         <div className="arcade-screen">
           <ChapterFilm chapter="experience" className="arcade-world" />
-          <div className="arcade-route" aria-hidden="true"><i /><i /><i /><span><Star size={20} fill="currentColor" /></span></div>
+          <div className="arcade-route" aria-hidden="true">
+            <i /><i /><i />
+            <div className="arcade-marker"><span><Star size={20} fill="currentColor" /></span></div>
+          </div>
         </div>
         <div className="arcade-deck">
           <p className="arcade-caption">Career milestones</p>
@@ -294,16 +309,25 @@ function Skills({ desktop }: { desktop: boolean }) {
         <div className="orbit-board" ref={bounds}>
           <ChapterFilm chapter="skills" className="lab-world" />
           <div className="orbit-grid">
-            {visibleSkills.map(({ name, color, group }, index) => (
-              <motion.div key={name} layout={desktop} className="orbit-item" data-direction={index % 4}>
-                <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group}
-                  drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
-                  whileDrag={{ scale: 1.13, zIndex: 5 }} whileHover={desktop ? { y: -5, rotate: index % 2 ? 3 : -3 } : undefined}
-                  aria-pressed={selected === name} onDragStart={() => setEngaged(true)}
-                  onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
-                ><span aria-hidden="true" />{name}</motion.button>
-              </motion.div>
-            ))}
+            <AnimatePresence initial={false} mode="popLayout">
+              {visibleSkills.map(({ name, color, group, direction }) => (
+                <motion.div key={name} layout={desktop ? 'position' : false} className="orbit-item" data-direction={direction}
+                  initial={desktop ? { opacity: 0 } : false} animate={{ opacity: 1 }}
+                  exit={desktop ? { opacity: 0 } : undefined}
+                  transition={{ opacity: { duration: desktop ? 0.16 : 0 }, layout: { type: 'spring', stiffness: 340, damping: 33 } }}
+                >
+                  <div className="orbit-entry">
+                    <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group}
+                      drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
+                      dragTransition={{ bounceStiffness: 470, bounceDamping: 34 }}
+                      whileDrag={{ scale: 1.05, zIndex: 5 }} whileHover={desktop ? { scale: 1.025 } : undefined}
+                      aria-pressed={selected === name}
+                      onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
+                    ><span aria-hidden="true" />{name}</motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
           <div className="orbit-exit" aria-hidden="true">✦ <span>✧</span> ✦</div>
         </div>
