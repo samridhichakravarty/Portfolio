@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, type FocusEvent, type FormEvent, type PointerEvent } from 'react';
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Check, Github, Linkedin, Mail, Shuffle, Sparkles, Star } from 'lucide-react';
 import { motion } from 'motion/react';
-import ChapterFilm from './chapter-film';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import ChapterFilm, { projectStops } from './chapter-film';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
 
 const email = 'chakravartysamridhi@gmail.com';
@@ -97,28 +98,34 @@ function Collectible({ name, collected, onCollect, draggable = false }: {
 function About({ sticker, count }: { sticker: React.ReactNode; count: number }) {
   const [note, setNote] = useState(false);
   return (
-    <section className="chapter scrapbook" data-chapter id="about" tabIndex={-1} aria-labelledby="scrapbook-title">
-      <div className="chapter-inner scrapbook-grid">
-        <div className="scrapbook-copy">
+    <section className="chapter scrapbook story-book" data-chapter id="about" tabIndex={-1} aria-labelledby="scrapbook-title">
+      <div className="chapter-inner book-stage">
+        <div className="book-header">
           <ChapterLabel>About me</ChapterLabel>
-          <h2 id="scrapbook-title" className="chapter-title">The digital<br /><em>scrapbook.</em></h2>
-          <div className="scrapbook-sheet">
-            <p>I’m <strong>Samridhi Chakravarty</strong>, a Computer Science Engineering student specializing in AI and Data Science at Poornima University in Jaipur.</p>
-            <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
-          </div>
-          <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
+          <h2 id="scrapbook-title" className="chapter-title">Curiosity is my <em>favorite feature.</em></h2>
         </div>
-        <div className="scrapbook-art">
-          <div className="scrapbook-mat">
-            <ChapterFilm chapter="about" />
-            <span className="film-caption">Poornima University · Jaipur</span>
+        <div className="book-chamber">
+          <div className="book-pages">
+            <article className="book-page book-left">
+              <h3>Hi, I’m Samridhi.</h3>
+              <p>I’m <strong>Samridhi Chakravarty</strong>, a Computer Science Engineering student specializing in AI and Data Science at Poornima University in Jaipur.</p>
+              <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
+              <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
+            </article>
+            <div className="book-page book-right">
+              <figure className="book-polaroid">
+                <img src="/media/chapters/about.webp" alt="" width={1040} height={585} loading="lazy" />
+                <figcaption>Poornima University · Jaipur</figcaption>
+              </figure>
+              {sticker}
+              <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
+                <span>Field note</span>
+                <span className="flip-front">Turn the page <ArrowUpRight size={17} /></span>
+                <span className="flip-back" id="scrapbook-note" aria-hidden={!note}>B.Tech · 2023–2027</span>
+              </button>
+            </div>
           </div>
-          {sticker}
-          <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
-            <span>Field note</span>
-            <span className="flip-front">Turn the page <ArrowUpRight size={17} /></span>
-            <span className="flip-back" id="scrapbook-note" aria-hidden={!note}>B.Tech · 2023–2027</span>
-          </button>
+          <ChapterFilm chapter="about" className="book-film" />
         </div>
       </div>
     </section>
@@ -153,30 +160,27 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
     const header = document.querySelector('header')?.offsetHeight ?? 0;
     const start = root.getBoundingClientRect().top + window.scrollY - header;
     const distance = root.offsetHeight - window.innerHeight + header;
-    window.scrollTo({ top: start + index * distance, behavior });
+    window.scrollTo({ top: start + projectStops[index] * distance, behavior });
   }
 
   function keepFocusInView(event: FocusEvent<HTMLDivElement>) {
     if (!event.target.matches(':focus-visible')) return;
     const panel = event.target.closest<HTMLElement>('[data-project]');
-    const percent = Number(section.current?.style.getPropertyValue('--chapter-progress'));
+    const percent = Number(section.current?.style.getPropertyValue('--gallery-progress'));
     if (!panel || !Number.isFinite(percent)) return;
     const index = Number(panel.dataset.project);
-    if (Math.abs(percent - index) > 0.05) goToProject(index, 'instant');
+    if (Math.abs(percent - index) > 0.05 || Number(section.current?.style.getPropertyValue('--chapter-progress')) < 0.34) goToProject(index, 'instant');
   }
 
   return (
-    <section ref={section} className="chapter exhibition" data-chapter id="work" tabIndex={-1} aria-labelledby="exhibition-title">
+    <section ref={section} className="chapter exhibition story-work" data-chapter id="work" tabIndex={-1} aria-labelledby="exhibition-title">
       <div className="chapter-inner exhibition-stage">
         <div className="exhibition-header">
           <div>
             <ChapterLabel>Selected work</ChapterLabel>
             <h2 className="chapter-title" id="exhibition-title">Project <em>playground.</em></h2>
           </div>
-          <div className="exhibition-film">
-            <ChapterFilm chapter="work" onProjectChange={setActive} />
-            {sticker}
-          </div>
+          {sticker}
         </div>
         <div className="project-viewport" onFocusCapture={keepFocusInView}>
           <div className="project-rail" id="project-rail">
@@ -194,6 +198,7 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
               </article>
             ))}
           </div>
+          <ChapterFilm chapter="work" className="work-film" onProjectChange={setActive} />
         </div>
         <div className="gallery-controls" aria-label="Project gallery controls">
           <p>Scroll to explore</p>
@@ -203,6 +208,7 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
             <button type="button" aria-label="Show Real-Time Chat Application" aria-pressed={active === 1} onClick={() => goToProject(1, 'smooth')}>02 <ArrowRight size={17} /></button>
           </div>
         </div>
+        <div className="project-confetti" aria-hidden="true"><i /><i /><i /></div>
       </div>
     </section>
   );
@@ -217,19 +223,21 @@ function Experience() {
   }
 
   return (
-    <section className="chapter arcade" data-chapter id="experience" tabIndex={-1} aria-labelledby="arcade-title">
-      <ChapterFilm chapter="experience" className="arcade-world" />
+    <section className="chapter arcade story-arcade" data-chapter id="experience" tabIndex={-1} aria-labelledby="arcade-title">
       <div className="chapter-inner arcade-content">
         <ChapterLabel>Experience</ChapterLabel>
-        <h2 className="chapter-title" id="arcade-title">Career <em>arcade.</em></h2>
+        <h2 className="chapter-title" id="arcade-title">Leveling up <em>in real life.</em></h2>
+        <div className="arcade-screen">
+          <ChapterFilm chapter="experience" className="arcade-world" />
+          <div className="arcade-route" aria-hidden="true"><i /><i /><i /><span><Star size={20} fill="currentColor" /></span></div>
+        </div>
         <div className="arcade-deck">
-          <p className="arcade-caption">Leveling up in real life.</p>
+          <p className="arcade-caption">Career milestones</p>
           <div className="level-controls" role="group" aria-label="Jump to a career milestone">
             {roles.map(({ company }, index) => <button key={company} type="button" onClick={() => visitMilestone(index)}>Level 0{index + 1}<span className="sr-only"> {company}</span></button>)}
           </div>
         </div>
         <ol className="arcade-path">
-          <li aria-hidden="true" className="arcade-token"><Star size={18} fill="currentColor" /></li>
           {roles.map(({ company, role, dates, stamp, description }, index) => (
             <li className={'arcade-stop stop-' + index} key={company}>
               <article className="career-card" id={'career-' + index} tabIndex={-1} aria-label={company + ', ' + role}>
@@ -242,6 +250,7 @@ function Experience() {
             </li>
           ))}
         </ol>
+        <div className="arcade-finish" aria-hidden="true"><Star size={19} fill="currentColor" /><span>Level complete</span></div>
       </div>
     </section>
   );
@@ -252,10 +261,12 @@ function Skills({ desktop }: { desktop: boolean }) {
   const [skills, setSkills] = useState(allSkills);
   const [shuffles, setShuffles] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
+  const [engaged, setEngaged] = useState(false);
   const bounds = useRef<HTMLDivElement>(null);
   const visibleSkills = category === 'All' ? skills : skills.filter(skill => skill.group === category);
 
   function shuffle() {
+    setEngaged(true);
     const reordered = [...skills];
     for (let index = reordered.length - 1; index > 0; index -= 1) {
       const other = Math.floor(Math.random() * (index + 1));
@@ -266,7 +277,7 @@ function Skills({ desktop }: { desktop: boolean }) {
   }
 
   return (
-    <section className="chapter lab" data-chapter id="skills" tabIndex={-1} aria-labelledby="lab-title">
+    <section className="chapter lab story-lab" data-chapter data-engaged={engaged || undefined} id="skills" tabIndex={-1} aria-labelledby="lab-title">
       <div className="chapter-inner">
         <div className="lab-heading">
           <div><ChapterLabel>Skills</ChapterLabel><h2 className="chapter-title" id="lab-title">Anti-gravity <em>lab.</em></h2></div>
@@ -275,7 +286,7 @@ function Skills({ desktop }: { desktop: boolean }) {
         <div className="lab-controls">
           <div role="group" aria-label="Filter technical skills" className="lab-filters">
             {['All', ...groups.map(group => group.name)].map(name => (
-              <button type="button" key={name} aria-pressed={category === name} onClick={() => { setCategory(name); setSelected(null); }}>{name}</button>
+              <button type="button" key={name} aria-pressed={category === name} onClick={() => { setEngaged(true); setCategory(name); setSelected(null); }}>{name}</button>
             ))}
           </div>
           <button type="button" className="shuffle-button" onClick={shuffle}><Shuffle size={17} /> Shuffle</button>
@@ -288,11 +299,13 @@ function Skills({ desktop }: { desktop: boolean }) {
                 <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group}
                   drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
                   whileDrag={{ scale: 1.13, zIndex: 5 }} whileHover={desktop ? { y: -5, rotate: index % 2 ? 3 : -3 } : undefined}
-                  aria-pressed={selected === name} onClick={() => setSelected(selected === name ? null : name)}
+                  aria-pressed={selected === name} onDragStart={() => setEngaged(true)}
+                  onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
                 ><span aria-hidden="true" />{name}</motion.button>
               </motion.div>
             ))}
           </div>
+          <div className="orbit-exit" aria-hidden="true">✦ <span>✧</span> ✦</div>
         </div>
         <p className="lab-status" aria-live="polite">{visibleSkills.length} {visibleSkills.length === 1 ? 'skill' : 'skills'}{category !== 'All' ? ' · ' + category : ''}{shuffles > 0 ? ' · Shuffle ' + shuffles : ''}{selected ? ' · ' + selected + ' selected' : ''}</p>
       </div>
@@ -303,6 +316,9 @@ function Skills({ desktop }: { desktop: boolean }) {
 function Contact({ sticker }: { sticker: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState('');
+  const [tone, setTone] = useState('cream');
+  const [decorated, setDecorated] = useState(false);
+  const [sentDraft, setSentDraft] = useState(false);
 
   function openEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -317,39 +333,54 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
     const subject = name ? 'Portfolio note from ' + name : 'Portfolio note';
     const body = name ? message + '\n\n' + name : message;
     setOpen(true);
+    setSentDraft(true);
     setStatus('Draft requested. If your email app doesn’t open, use the address below.');
     window.location.href = 'mailto:' + email + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   }
 
   return (
-    <footer className="chapter post-office" data-chapter id="contact" tabIndex={-1} aria-labelledby="post-title">
+    <footer className="chapter post-office story-post" data-chapter id="contact" tabIndex={-1} aria-labelledby="post-title">
       <div className="chapter-inner">
         <ChapterLabel>Contact</ChapterLabel>
-        <h2 className="chapter-title" id="post-title">Let’s make<br />something <em>cool.</em></h2>
-        <div className="post-grid">
-          <div className="envelope-art">
-            <ChapterFilm chapter="contact" open={open} />
-            {sticker}
-            <button className="envelope-button" type="button" aria-pressed={open} onClick={() => setOpen(!open)}>
-              <Mail size={17} />{open ? 'Close the envelope' : 'Open the envelope'}
-            </button>
-          </div>
-          <form className="postcard-form" action={'mailto:' + email} method="post" encType="text/plain"
-            onSubmit={openEmail} onChange={() => setStatus('')}>
-            <h3>Send some good vibes.</h3>
+        <h2 className="chapter-title" id="post-title">Send some <em>good vibes.</em></h2>
+        <div className="post-chamber">
+          <form className="postcard-form" data-tone={tone} data-draft={sentDraft || undefined}
+            action={'mailto:' + email} method="post" encType="text/plain"
+            onSubmit={openEmail} onChange={() => { setStatus(''); setSentDraft(false); }}>
+            <div className="postcard-tools">
+              <h3>Your postcard</h3>
+              <div className="postcard-swatches" role="group" aria-label="Postcard color">
+                {['cream', 'pink', 'lavender'].map(color => <button type="button" key={color} data-swatch={color} aria-label={color + ' postcard'} aria-pressed={tone === color} onClick={() => { setTone(color); setOpen(true); }} />)}
+              </div>
+            </div>
+            {decorated && <img className="postcard-decoration" src="/media/heart.webp" width={49} height={40} alt="" />}
             <label htmlFor="postcard-name">Your name <small>(optional)</small></label>
             <input id="postcard-name" name="sender" autoComplete="name" maxLength={100} placeholder="Your name" />
             <label htmlFor="postcard-message">Your message</label>
             <textarea id="postcard-message" name="message" placeholder="Tell me what you have in mind." rows={4} maxLength={1600} required />
-            <button className="post-submit" type="submit">Open email draft <ArrowUpRight size={18} /></button>
+            <div className="postcard-actions">
+              <button className="post-submit" type="submit">Send message <ArrowUpRight size={18} /></button>
+              <button className="post-decorate" type="button" aria-pressed={decorated} onClick={() => { setDecorated(!decorated); setOpen(true); }}>
+                <Sparkles size={16} /> {decorated ? 'Remove sticker' : 'Add sticker'}
+              </button>
+            </div>
             <p className="post-status" role="status">{status || 'Opens a draft in your email app.'}</p>
           </form>
+          <ChapterFilm chapter="contact" className="post-film" open={open} />
+          {sticker}
+          <button className="envelope-button" type="button" aria-pressed={open} onClick={() => setOpen(!open)}>
+            <Mail size={17} />{open ? 'Release the envelope' : 'Open the envelope'}
+          </button>
         </div>
-        <a className="post-email" href={'mailto:' + email}><Mail size={19} />{email}</a>
-        <div className="contact-links post-links">
-          <a href={github} target="_blank" rel="noreferrer"><Github size={18} /> GitHub</a>
-          <a href={linkedin} target="_blank" rel="noreferrer"><Linkedin size={18} /> LinkedIn</a>
-          <a href="/media/Samridhi-Chakravarty-Resume.pdf" download><ArrowDownToLine size={18} /> Download résumé</a>
+        <div className="post-finale">
+          <h3 className="chapter-title">Let’s make<br />something <em>cool.</em></h3>
+          <img src="/media/burst.webp" alt="" className="finale-sparkle" loading="lazy" />
+          <a className="post-email" href={'mailto:' + email}><Mail size={19} />{email}</a>
+          <div className="contact-links post-links">
+            <a href={github} target="_blank" rel="noreferrer"><Github size={18} /> GitHub</a>
+            <a href={linkedin} target="_blank" rel="noreferrer"><Linkedin size={18} /> LinkedIn</a>
+            <a href="/media/Samridhi-Chakravarty-Resume.pdf" download><ArrowDownToLine size={18} /> Download résumé</a>
+          </div>
         </div>
         <div className="footer-bottom"><span>Samridhi Chakravarty · Jaipur, India</span><a href="#top">Back to top <ArrowUp size={16} /></a></div>
       </div>
@@ -358,9 +389,34 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
 }
 
 export default function Chapters() {
+  const layout = useRef<HTMLDivElement>(null);
   const [stickers, setStickers] = useState<Sticker[]>([]);
   const desktop = useDesktopMotion();
   const stored = useRef(false);
+
+  useEffect(() => {
+    if (!layout.current) return;
+    const firstHash = window.location.hash;
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    let alignInitialChapter = Boolean(firstHash) && navigation?.type !== 'back_forward';
+    let frame = 0;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+        if (!alignInitialChapter) return;
+        alignInitialChapter = false;
+        if (window.location.hash !== firstHash) return;
+        const chapter = document.getElementById(firstHash.slice(1));
+        if (chapter?.hasAttribute('data-chapter')) chapter.scrollIntoView({ behavior: 'instant' });
+      });
+    });
+    for (const chapter of layout.current.children) observer.observe(chapter);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frame);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -386,7 +442,7 @@ export default function Chapters() {
   const sticker = (name: Sticker, draggable = false) => <Collectible name={name} collected={stickers.includes(name)} onCollect={collect} draggable={desktop && draggable} />;
 
   return (
-    <div className="chapters">
+    <div className="chapters" ref={layout}>
       <About sticker={sticker('daisy', true)} count={stickers.length} />
       <Work sticker={sticker('burst')} />
       <Experience />
