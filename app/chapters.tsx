@@ -5,9 +5,10 @@ import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Check, G
 import { AnimatePresence, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ChapterFilm, { careerStops, type ChapterMoment } from './chapter-film';
+import { placeBookCards } from './book-cards';
 import { scrollAfterWheel } from './chapter-scroll';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
-import SkillFlight from './skill-flight';
+import { createSkillFlight } from './skill-flight';
 
 const email = 'chakravartysamridhi@gmail.com';
 const github = 'https://github.com/samridhichakravarty';
@@ -64,7 +65,9 @@ const groups = [
   { name: 'Backend & data', skills: ['Node.js', 'REST APIs', 'Backend Integration', 'MongoDB', 'MySQL', 'Database Fundamentals'] },
   { name: 'AI & tools', skills: ['AI Fundamentals', 'Data Science Fundamentals', 'AI API Integration', 'Git', 'GitHub', 'Vercel', 'Cloudinary'] },
 ];
-const allSkills = groups.flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })));
+const allSkills = groups
+  .flatMap((group, color) => group.skills.map(name => ({ name, color, group: group.name })))
+  .map((skill, flightSlot) => ({ ...skill, flightSlot }));
 
 function ChapterLabel({ children }: { children: string }) {
   return <p className="chapter-label"><span aria-hidden="true" />{children}</p>;
@@ -103,6 +106,11 @@ function Collectible({ name, collected, onCollect, draggable = false }: {
 
 function About({ sticker, count }: { sticker: React.ReactNode; count: number }) {
   const [note, setNote] = useState(false);
+  const portrait = useRef<HTMLElement>(null);
+  const bio = useRef<HTMLElement>(null);
+  const trackBook = useCallback((moment: ChapterMoment) => {
+    if (portrait.current && bio.current) placeBookCards(portrait.current, bio.current, moment);
+  }, []);
   return (
     <section className="chapter scrapbook story-book" data-chapter id="about" tabIndex={-1} aria-labelledby="scrapbook-title">
       <div className="chapter-inner book-stage">
@@ -112,14 +120,16 @@ function About({ sticker, count }: { sticker: React.ReactNode; count: number }) 
         </div>
         <div className="book-chamber">
           <div className="book-pages">
-            <figure className="book-portrait">
+            <figure className="book-portrait" ref={portrait}>
               <img src="/media/chapters/samridhi-portrait.webp" alt="Samridhi wearing pink sunglasses against a blue sky" width={960} height={1050} loading="lazy" />
               <figcaption>Samridhi Chakravarty</figcaption>
             </figure>
-            <article className="book-bio">
-              <h3>Hi, I’m Samridhi.</h3>
-              <p>I’m <strong>Samridhi Chakravarty</strong>, a Computer Science Engineering student specializing in AI and Data Science at Poornima University in Jaipur.</p>
-              <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
+            <article className="book-bio" ref={bio}>
+              <div className="book-bio-copy">
+                <h3>Hi, I’m Samridhi.</h3>
+                <p>I’m <strong>Samridhi Chakravarty</strong>, a Computer Science Engineering student specializing in AI and Data Science at Poornima University in Jaipur.</p>
+                <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
+              </div>
               <div className="book-bio-tools">
                 <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
                 <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
@@ -131,7 +141,7 @@ function About({ sticker, count }: { sticker: React.ReactNode; count: number }) 
             </article>
             {sticker}
           </div>
-          <ChapterFilm chapter="about" className="book-film" />
+          <ChapterFilm chapter="about" className="book-film" onMotion={trackBook} />
         </div>
       </div>
     </section>
@@ -297,8 +307,10 @@ function Skills({ desktop }: { desktop: boolean }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [engaged, setEngaged] = useState(false);
   const bounds = useRef<HTMLDivElement>(null);
-  const flight = useRef<((moment: ChapterMoment) => void) | null>(null);
-  const trackFlight = useCallback((moment: ChapterMoment) => flight.current?.(moment), []);
+  const [flight] = useState(createSkillFlight);
+  const trackFlight = useCallback((moment: ChapterMoment) => {
+    if (bounds.current) flight(bounds.current, moment);
+  }, [flight]);
   const visibleSkills = category === 'All' ? skills : skills.filter(skill => skill.group === category);
 
   function shuffle() {
@@ -314,44 +326,48 @@ function Skills({ desktop }: { desktop: boolean }) {
 
   return (
     <section className="chapter lab story-lab" data-chapter data-engaged={engaged || undefined} id="skills" tabIndex={-1} aria-labelledby="lab-title">
-      <div className="chapter-inner">
-        <div className="lab-heading">
-          <div><ChapterLabel>Skills</ChapterLabel><h2 className="chapter-title" id="lab-title">Anti-gravity <em>lab.</em></h2></div>
-          <p>{desktop ? 'Drag the badges, filter by category, or shuffle the board.' : 'Filter by category, shuffle the board, or tap a badge.'}</p>
-        </div>
-        <div className="lab-controls">
-          <div role="group" aria-label="Filter technical skills" className="lab-filters">
-            {['All', ...groups.map(group => group.name)].map(name => (
-              <button type="button" key={name} aria-pressed={category === name} onClick={() => { setEngaged(true); setCategory(name); setSelected(null); }}>{name}</button>
-            ))}
+      <div className="chapter-sequence">
+        <div className="chapter-inner chapter-sequence-stage lab-stage">
+          <div className="lab-heading">
+            <div><ChapterLabel>Skills</ChapterLabel><h2 className="chapter-title" id="lab-title">Anti-gravity <em>lab.</em></h2></div>
+            <p>{desktop ? 'Drag the badges, filter by category, or shuffle the board.' : 'Filter by category, shuffle the board, or tap a badge.'}</p>
           </div>
-          <button type="button" className="shuffle-button" onClick={shuffle}><Shuffle size={17} /> Shuffle</button>
-        </div>
-        <div className="orbit-board" ref={bounds}>
-          <ChapterFilm chapter="skills" className="lab-world" onMotion={trackFlight} />
-          <div className="orbit-grid">
-            <AnimatePresence initial={false} mode="popLayout">
-              {visibleSkills.map(({ name, color, group }) => (
-                <motion.div key={name} layout={desktop ? 'position' : false} className="orbit-item"
-                  initial={desktop ? { opacity: 0 } : false} animate={{ opacity: 1 }}
-                  exit={desktop ? { opacity: 0 } : undefined}
-                  transition={{ opacity: { duration: desktop ? 0.16 : 0 }, layout: { type: 'spring', stiffness: 340, damping: 33 } }}
-                >
-                  <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group} data-flight-target={name}
-                    drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
-                    dragTransition={{ bounceStiffness: 470, bounceDamping: 34 }}
-                    whileDrag={{ scale: 1.05, zIndex: 5 }} whileHover={desktop ? { scale: 1.025 } : undefined}
-                    aria-pressed={selected === name}
-                    onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
-                  ><span aria-hidden="true" />{name}</motion.button>
-                </motion.div>
+          <div className="lab-controls">
+            <div role="group" aria-label="Filter technical skills" className="lab-filters">
+              {['All', ...groups.map(group => group.name)].map(name => (
+                <button type="button" key={name} aria-pressed={category === name} onClick={() => { setEngaged(true); setCategory(name); setSelected(null); }}>{name}</button>
               ))}
-            </AnimatePresence>
+            </div>
+            <button type="button" className="shuffle-button" onClick={shuffle}><Shuffle size={17} /> Shuffle</button>
           </div>
-          <SkillFlight ref={flight} />
-          <div className="orbit-exit" aria-hidden="true">✦ <span>✧</span> ✦</div>
+          <div className="chapter-scene-window">
+            <div className="orbit-board" ref={bounds}>
+              <ChapterFilm chapter="skills" className="lab-world" onMotion={trackFlight} />
+              <div className="orbit-grid">
+                <AnimatePresence initial={false} mode="popLayout">
+                  {visibleSkills.map(({ name, color, group, flightSlot }) => (
+                    <motion.div key={name} layout={desktop ? 'position' : false} className="orbit-item"
+                      data-flight-slot={flightSlot}
+                      initial={desktop ? { opacity: 0 } : false} animate={{ opacity: 1 }}
+                      exit={desktop ? { opacity: 0 } : undefined}
+                      transition={{ opacity: { duration: desktop ? 0.16 : 0 }, layout: { type: 'spring', stiffness: 340, damping: 33 } }}
+                    >
+                      <motion.button type="button" className={'orbit-badge orbit-tone-' + color} title={group} data-flight-target={name}
+                        drag={desktop} dragConstraints={bounds} dragSnapToOrigin dragMomentum={false}
+                        dragTransition={{ bounceStiffness: 470, bounceDamping: 34 }}
+                        whileDrag={{ scale: 1.05, zIndex: 5 }} whileHover={desktop ? { scale: 1.025 } : undefined}
+                        aria-pressed={selected === name}
+                        onClick={() => { setEngaged(true); setSelected(selected === name ? null : name); }}
+                      ><span aria-hidden="true" />{name}</motion.button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+              <div className="orbit-exit" aria-hidden="true">✦ <span>✧</span> ✦</div>
+            </div>
+          </div>
+          <p className="lab-status" aria-live="polite">{visibleSkills.length} {visibleSkills.length === 1 ? 'skill' : 'skills'}{category !== 'All' ? ' · ' + category : ''}{shuffles > 0 ? ' · Shuffle ' + shuffles : ''}{selected ? ' · ' + selected + ' selected' : ''}</p>
         </div>
-        <p className="lab-status" aria-live="polite">{visibleSkills.length} {visibleSkills.length === 1 ? 'skill' : 'skills'}{category !== 'All' ? ' · ' + category : ''}{shuffles > 0 ? ' · Shuffle ' + shuffles : ''}{selected ? ' · ' + selected + ' selected' : ''}</p>
       </div>
     </section>
   );
@@ -384,40 +400,48 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
 
   return (
     <footer className="chapter post-office story-post" data-chapter id="contact" tabIndex={-1} aria-labelledby="post-title">
-      <div className="chapter-inner">
-        <ChapterLabel>Contact</ChapterLabel>
-        <h2 className="chapter-title" id="post-title">Send some <em>good vibes.</em></h2>
-        <div className="post-chamber">
-          <div className="postcard-mount">
-            <form className="postcard-form" data-tone={tone} data-draft={sentDraft || undefined}
-              action={'mailto:' + email} method="post" encType="text/plain"
-              onSubmit={openEmail} onFocus={() => setOpen(true)} onChange={() => { setStatus(''); setSentDraft(false); }}>
-              <div className="postcard-tools">
-                <h3>Your postcard</h3>
-                <div className="postcard-swatches" role="group" aria-label="Postcard color">
-                  {['cream', 'pink', 'lavender'].map(color => <button type="button" key={color} data-swatch={color} aria-label={color + ' postcard'} aria-pressed={tone === color} onClick={() => { setTone(color); setOpen(true); }} />)}
-                </div>
-              </div>
-              {decorated && <img className="postcard-decoration" src="/media/heart.webp" width={49} height={40} alt="" />}
-              <label htmlFor="postcard-name">Your name <small>(optional)</small></label>
-              <input id="postcard-name" name="sender" autoComplete="name" maxLength={100} placeholder="Your name" />
-              <label htmlFor="postcard-message">Your message</label>
-              <textarea id="postcard-message" name="message" placeholder="Tell me what you have in mind." rows={4} maxLength={1600} required />
-              <div className="postcard-actions">
-                <button className="post-submit" type="submit">Send message <ArrowUpRight size={18} /></button>
-                <button className="post-decorate" type="button" aria-pressed={decorated} onClick={() => { setDecorated(!decorated); setOpen(true); }}>
-                  <Sparkles size={16} /> {decorated ? 'Remove sticker' : 'Add sticker'}
-                </button>
-              </div>
-              <p className="post-status" role="status">{status || 'Opens a draft in your email app.'}</p>
-            </form>
+      <div className="chapter-sequence">
+        <div className="chapter-inner chapter-sequence-stage post-stage">
+          <div className="post-heading">
+            <ChapterLabel>Contact</ChapterLabel>
+            <h2 className="chapter-title" id="post-title">Send some <em>good vibes.</em></h2>
           </div>
-          <ChapterFilm chapter="contact" className="post-film" open={open} />
-          {sticker}
-          <button className="envelope-button" type="button" aria-pressed={open} onClick={() => setOpen(!open)}>
-            <Mail size={17} />{open ? 'Release the envelope' : 'Open the envelope'}
-          </button>
+          <div className="chapter-scene-window">
+            <div className="post-chamber">
+              <div className="postcard-mount">
+                <form className="postcard-form" data-tone={tone} data-draft={sentDraft || undefined}
+                  action={'mailto:' + email} method="post" encType="text/plain"
+                  onSubmit={openEmail} onFocus={() => setOpen(true)} onChange={() => { setStatus(''); setSentDraft(false); }}>
+                  <div className="postcard-tools">
+                    <h3>Your postcard</h3>
+                    <div className="postcard-swatches" role="group" aria-label="Postcard color">
+                      {['cream', 'pink', 'lavender'].map(color => <button type="button" key={color} data-swatch={color} aria-label={color + ' postcard'} aria-pressed={tone === color} onClick={() => { setTone(color); setOpen(true); }} />)}
+                    </div>
+                  </div>
+                  {decorated && <img className="postcard-decoration" src="/media/heart.webp" width={49} height={40} alt="" />}
+                  <label htmlFor="postcard-name">Your name <small>(optional)</small></label>
+                  <input id="postcard-name" name="sender" autoComplete="name" maxLength={100} placeholder="Your name" />
+                  <label htmlFor="postcard-message">Your message</label>
+                  <textarea id="postcard-message" name="message" placeholder="Tell me what you have in mind." rows={4} maxLength={1600} required />
+                  <div className="postcard-actions">
+                    <button className="post-submit" type="submit">Send message <ArrowUpRight size={18} /></button>
+                    <button className="post-decorate" type="button" aria-pressed={decorated} onClick={() => { setDecorated(!decorated); setOpen(true); }}>
+                      <Sparkles size={16} /> {decorated ? 'Remove sticker' : 'Add sticker'}
+                    </button>
+                  </div>
+                  <p className="post-status" role="status">{status || 'Opens a draft in your email app.'}</p>
+                </form>
+              </div>
+              <ChapterFilm chapter="contact" className="post-film" open={open} />
+              {sticker}
+              <button className="envelope-button" type="button" aria-pressed={open} onClick={() => setOpen(!open)}>
+                <Mail size={17} />{open ? 'Release the envelope' : 'Open the envelope'}
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+      <div className="chapter-inner post-end">
         <div className="post-finale">
           <h3 className="chapter-title">Let’s make<br />something <em>cool.</em></h3>
           <img src="/media/burst.webp" alt="" className="finale-sparkle" loading="lazy" />

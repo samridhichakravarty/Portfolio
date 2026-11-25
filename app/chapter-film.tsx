@@ -11,14 +11,15 @@ export type ChapterMoment = { seconds: number; lift: number };
 
 const desktopQuery = '(min-width: 761px) and (prefers-reduced-motion: no-preference)';
 const desktopPin = '(min-width: 1000px) and (min-height: 720px)';
+const scenePin = '(min-height: 650px)';
 const fps = 24;
 
 const cuts = {
-  about: { seconds: [0.08, 16 / 3], through: 0.47, join: [0.425, 0.58], lift: [0.54, 0.87], leave: [0.87, 1] },
+  about: { seconds: [0.08, 16 / 3], through: 0.52, join: [0.52, 0.59], lift: [0.59, 0.90], leave: [0.90, 1] },
   work: { seconds: [0.06, 2.5], through: 0.72, join: [0.47, 0.8], lift: [0.52, 0.87], leave: [0.86, 1] },
   experience: { seconds: [0.13, 6.67], through: 0.94, join: [0.39, 0.49], lift: [0.72, 0.96], leave: [0.89, 1] },
-  skills: { seconds: [0.08, 19 / 3], through: 0.71, join: [0.57, 0.89], lift: [0.64, 0.94], leave: [0.87, 1] },
-  contact: { seconds: [0.08, 6], through: 0.65, join: [0.645, 0.79], lift: [0.77, 0.94], leave: [0.94, 1] },
+  skills: { seconds: [0, 7.75], through: 0.82, join: [0.77, 0.99], lift: [0.78, 0.99], leave: [0.92, 1] },
+  contact: { seconds: [0.08, 6], through: 0.73, join: [0.73, 0.82], lift: [0.82, 0.96], leave: [0.96, 1] },
 } as const;
 
 const landings = [
@@ -148,15 +149,18 @@ export default function ChapterFilm({
     const cut = cuts[chapter];
     gsap.registerPlugin(ScrollTrigger);
     const media = gsap.matchMedia();
-    media.add({ desktop: desktopQuery, wide: desktopPin }, context => {
+    media.add({ desktop: desktopQuery, wide: desktopPin, scene: scenePin }, context => {
       if (!context.conditions?.desktop) return;
 
       const arcade = context.conditions.wide && chapter === 'experience';
-      const letter = context.conditions.wide && chapter === 'contact';
-      const pinned = context.conditions.wide && (chapter === 'work' || chapter === 'about' || arcade);
-      const workGallery = pinned && chapter === 'work';
-      const usesStage = chapter === 'skills' || chapter === 'contact';
-      const triggerElement = pinned || chapter === 'experience' ? section : usesStage ? frame.parentElement ?? frame : frame;
+      const book = context.conditions.scene && chapter === 'about';
+      const workGallery = context.conditions.wide && chapter === 'work';
+      const usesScene = chapter === 'skills' || chapter === 'contact';
+      const sequence = usesScene && context.conditions.scene ? frame.closest<HTMLElement>('.chapter-sequence') : null;
+      if ((usesScene && !sequence) || (chapter === 'about' && !book)) return;
+      const letter = chapter === 'contact';
+      const pinned = Boolean(book || workGallery || arcade || sequence);
+      const triggerElement = sequence ?? (pinned || chapter === 'experience' ? section : frame);
       const timeline = gsap.timeline({ paused: true });
       const motion = { clock: 0, seconds: cut.seconds[0] as number, join: 0, lift: 0, leave: 0, track: 0 };
       const cards = [0, 1, 2].map(() => ({ visibility: 0 }));
@@ -201,9 +205,6 @@ export default function ChapterFilm({
             timeline.to(cards[index], { visibility: 0, duration: landing.exit[1] - landing.exit[0], ease: 'power1.in' }, landing.exit[0]);
           });
           timeline.to(motion, { seconds: 6.67, duration: 0.07, ease: travelEase }, 0.93);
-        } else if (chapter === 'skills') {
-          timeline.to(motion, { seconds: 11 / 3, duration: 0.32, ease: travelEase }, 0);
-          timeline.to(motion, { seconds: cut.seconds[1], duration: cut.through - 0.32, ease: 'none' }, 0.32);
         } else {
           timeline.to(motion, { seconds: cut.seconds[1], duration: gallery ? lead * 0.72 : cut.through, ease: travelEase }, 0);
         }
@@ -218,8 +219,8 @@ export default function ChapterFilm({
       }
 
       function render() {
-        const playhead = chapter === 'contact' ? progress + (0.95 - progress) * envelope.open : progress;
-        timeline.progress(chapter === 'contact' ? Math.max(progress, playhead) : playhead);
+        const playhead = letter ? progress + Math.max(0, 0.97 - progress) * envelope.open : progress;
+        timeline.progress(playhead);
         write('--chapter-progress', progress);
         write('--chapter-handoff', motion.join);
         write('--chapter-lift', motion.lift);
@@ -234,20 +235,23 @@ export default function ChapterFilm({
         }
         if (arcade) {
           cards.forEach((card, index) => write('--career-' + index, card.visibility));
+          write('--career-float', Math.sin(progress * Math.PI * 14));
           const index = cards.findIndex(card => card.visibility > 0.5);
           if (lastIndex !== index) {
             lastIndex = index;
             onCareerChange?.(index);
           }
         }
-        if (pinned && chapter === 'about') section?.toggleAttribute('data-book-ready', motion.lift > 0.84);
-        if (chapter === 'skills') section?.toggleAttribute('data-skill-ready', motion.lift > 0.9);
+        if (book) section?.toggleAttribute('data-book-ready', motion.lift > 0.84);
         if (letter) section?.toggleAttribute('data-letter-ready', motion.join > 0.95);
         onMotion?.({ seconds: displayedSeconds, lift: motion.lift });
         scrubber.seek(motion.seconds);
       }
 
-      if (pinned) section.dataset[workGallery ? 'gallery' : arcade ? 'arcadePin' : 'bookPin'] = 'true';
+      if (book) section.dataset.bookPin = 'true';
+      if (workGallery) section.dataset.gallery = 'true';
+      if (arcade) section.dataset.arcadePin = 'true';
+      if (sequence) section.dataset.sceneScroll = 'true';
       if (letter) section.dataset.letterScene = 'true';
       section.dataset.chapterMotion = 'true';
       configure();
@@ -263,15 +267,12 @@ export default function ChapterFilm({
       }, { rootMargin: '440px 0px' });
       observer.observe(frame.parentElement ?? frame);
 
-      const finishesInView = chapter === 'skills' || letter;
       const trigger = ScrollTrigger.create({
         trigger: triggerElement,
         start: pinned
           ? () => 'top top+=' + (document.querySelector('header')?.offsetHeight ?? 0)
-          : finishesInView ? 'top 65%' : usesStage ? 'top 63%' : 'top 74%',
-        end: pinned ? 'bottom bottom' : finishesInView
-          ? () => 'top top+=' + ((document.querySelector('header')?.offsetHeight ?? 0) + 22)
-          : chapter === 'experience' ? 'bottom 46%' : 'bottom 29%',
+          : 'top 74%',
+        end: pinned ? 'bottom bottom' : chapter === 'experience' ? 'bottom 46%' : 'bottom 29%',
         invalidateOnRefresh: true,
         onRefreshInit: workGallery ? configure : undefined,
         onUpdate: self => { progress = self.progress; render(); },
@@ -310,7 +311,7 @@ export default function ChapterFilm({
         delete section.dataset.bookPin;
         delete section.dataset.bookReady;
         delete section.dataset.arcadePin;
-        delete section.dataset.skillReady;
+        delete section.dataset.sceneScroll;
         delete section.dataset.letterScene;
         delete section.dataset.letterReady;
         delete section.dataset.chapterMotion;
@@ -325,7 +326,7 @@ export default function ChapterFilm({
   return (
     <div ref={film} className={'chapter-film ' + className} data-film={chapter} data-open={chapter === 'contact' && open || undefined} aria-hidden="true">
       <picture>
-        {chapter !== 'contact' && <source media={desktopQuery} srcSet={'/media/chapters/' + chapter + '-entry.webp'} />}
+        {chapter !== 'contact' && <source media={chapter === 'about' || chapter === 'skills' ? desktopQuery + ' and ' + scenePin : desktopQuery} srcSet={'/media/chapters/' + chapter + '-entry.webp'} />}
         <img src={'/media/chapters/' + chapter + '.webp'} alt="" width={1040} height={585} loading="lazy" decoding="async" />
       </picture>
       <video ref={player} muted playsInline preload="none" tabIndex={-1} onError={() => { if (film.current) delete film.current.dataset.ready; }} />
