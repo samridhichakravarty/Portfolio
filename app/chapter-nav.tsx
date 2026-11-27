@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type MouseEvent } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
-import { cancelChapterScroll, scrollAfterWheel } from './chapter-scroll';
+import { scrollToElement, scrollToY } from './smooth-scroll';
 
 const chapters = [
   ['top', 'Home'], ['about', 'About'], ['work', 'Work'],
@@ -49,12 +49,8 @@ export default function ChapterNav() {
     const hash = '#' + id;
     if (window.location.hash !== hash) window.history.pushState(null, '', hash);
     if (event.detail === 0 && id !== 'top') target.focus({ preventScroll: true });
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const scroll = () => target.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth' });
-    if (id === 'top') {
-      cancelChapterScroll();
-      scroll();
-    } else scrollAfterWheel(scroll);
+    if (id === 'top') scrollToY(0);
+    else scrollToElement(target);
   }
 
   return (

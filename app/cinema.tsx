@@ -5,6 +5,7 @@ import { ArrowDown, Clapperboard } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import { registerLenis, scrollToElement, scrollToY } from './smooth-scroll';
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
 const range = (value: number, start: number, end: number) => clamp((value - start) / (end - start));
@@ -57,7 +58,9 @@ export default function Cinema() {
       const tick = (time: number) => lenis?.raf(time * 1000);
       if (lenis) {
         gsap.ticker.add(tick);
+        gsap.ticker.lagSmoothing(0);
         lenis.on('scroll', ScrollTrigger.update);
+        registerLenis(lenis);
       }
 
       root.dataset.scrub = 'true';
@@ -101,7 +104,9 @@ export default function Cinema() {
         clipOne.pause();
         clipTwo.pause();
         if (lenis) {
+          registerLenis(null);
           gsap.ticker.remove(tick);
+          gsap.ticker.lagSmoothing(500, 33);
           lenis.destroy();
         }
         delete root.dataset.scrub;
@@ -115,8 +120,9 @@ export default function Cinema() {
 
   function stepIntoStory() {
     const root = story.current;
+    const about = document.getElementById('about');
     if (root?.dataset.scrub !== 'true') {
-      document.getElementById('about')?.scrollIntoView();
+      if (about) scrollToElement(about, 'instant');
       return;
     }
     const headerHeight = document.querySelector('header')?.offsetHeight ?? 0;
@@ -124,10 +130,10 @@ export default function Cinema() {
     const distance = root.offsetHeight - window.innerHeight + headerHeight;
     const nextStep = Math.min(1, Math.max(0, (window.scrollY - top) / distance) + 0.24);
     if (nextStep >= 0.99) {
-      document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' });
+      if (about) scrollToElement(about);
       return;
     }
-    window.scrollTo({ top: top + distance * nextStep, behavior: 'smooth' });
+    scrollToY(top + distance * nextStep);
   }
 
   return (

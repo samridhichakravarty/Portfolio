@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ChapterFilm, { careerStops, type ChapterMoment } from './chapter-film';
 import { placeBookCards } from './book-cards';
-import { scrollAfterWheel } from './chapter-scroll';
+import { scrollToElement, scrollToY } from './smooth-scroll';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
 import { createSkillFlight } from './skill-flight';
 
@@ -177,13 +177,11 @@ function Work({ sticker }: { sticker: React.ReactNode }) {
   function goToProject(index: number, behavior: ScrollBehavior) {
     const root = section.current;
     if (!root?.hasAttribute('data-gallery')) return;
-    scrollAfterWheel(() => {
-      const offset = Number.parseFloat(root.style.getPropertyValue(index === 0 ? '--gallery-first' : '--gallery-second'));
-      if (!Number.isFinite(offset)) return;
-      const header = document.querySelector('header')?.offsetHeight ?? 0;
-      const start = root.getBoundingClientRect().top + window.scrollY - header;
-      window.scrollTo({ top: start + offset, behavior });
-    });
+    const offset = Number.parseFloat(root.style.getPropertyValue(index === 0 ? '--gallery-first' : '--gallery-second'));
+    if (!Number.isFinite(offset)) return;
+    const header = document.querySelector('header')?.offsetHeight ?? 0;
+    const start = root.getBoundingClientRect().top + window.scrollY - header;
+    scrollToY(start + offset, behavior === 'smooth' ? 'smooth' : 'instant');
   }
 
   function keepFocusInView(event: FocusEvent<HTMLDivElement>) {
@@ -247,20 +245,17 @@ function Experience() {
   function visitMilestone(index: number) {
     const root = section.current;
     if (root?.hasAttribute('data-arcade-pin')) {
-      scrollAfterWheel(() => {
-        const header = document.querySelector('header')?.offsetHeight ?? 0;
-        const start = root.getBoundingClientRect().top + window.scrollY - header;
-        const distance = root.offsetHeight - window.innerHeight + header;
-        window.scrollTo({ top: start + distance * careerStops[index], behavior: 'smooth' });
-      });
+      const header = document.querySelector('header')?.offsetHeight ?? 0;
+      const start = root.getBoundingClientRect().top + window.scrollY - header;
+      const distance = root.offsetHeight - window.innerHeight + header;
+      scrollToY(start + distance * careerStops[index]);
       return;
     }
 
     const card = document.getElementById('career-' + index);
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     card?.focus({ preventScroll: true });
     setActive(index);
-    scrollAfterWheel(() => card?.scrollIntoView({ behavior: reduced ? 'instant' : 'smooth', block: 'nearest' }));
+    if (card) scrollToElement(card, 'smooth', 16);
   }
 
   return (
