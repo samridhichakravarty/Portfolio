@@ -1,9 +1,11 @@
 ﻿.chapter-nav nav a { position: relative; }
 .chapter-nav nav a[aria-current="location"] { color: var(--deep-blue); }
-.chapter-nav nav a[aria-current="location"]::after {
+.chapter-nav nav a::after {
   content: ""; position: absolute; height: 3px; border-radius: 6px; background: currentColor;
-  left: 0; right: 0; bottom: .15rem;
+  left: 0; right: 0; bottom: .15rem; transform: scaleX(0); transform-origin: left;
+  transition: transform .35s cubic-bezier(.16,1,.3,1);
 }
+.chapter-nav nav a:hover::after, .chapter-nav nav a[aria-current="location"]::after { transform: scaleX(1); }
 .chapter-nav .nav-contact[aria-current="location"] { background: var(--pink); }
 
 .chapter { --chapter-progress: 0; position: relative; border-bottom: var(--line); }
@@ -691,4 +693,31 @@
   .story-post .post-chamber { padding: .6rem; }
   .story-post .post-chamber .postcard-form { box-shadow: 3px 3px var(--ink); }
   .finale-sparkle { right: -1%; top: -10%; width: 71px; }
+}
+
+
+/* Motion layer: all transform/opacity, disabled for reduced motion. */
+.magnetic { transition: translate .3s cubic-bezier(.16,1,.3,1), transform .2s, box-shadow .2s, background .2s; }
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise-in { from { opacity: 0; translate: 0 26px; } }
+  .intro-kicker, .intro-copy h1, .intro-subtitle, .scene-controls { animation: rise-in .8s cubic-bezier(.16,1,.3,1) both; }
+  .intro-kicker { animation-delay: .1s; }
+  .intro-copy h1 { animation-delay: .22s; }
+  .intro-subtitle { animation-delay: .38s; }
+  .scene-controls { animation-delay: .55s; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes chapter-arrive { from { opacity: 0; translate: 0 2rem; } }
+    .chapter-label, .chapter-title { animation: chapter-arrive linear both; animation-timeline: view(); animation-range: entry 5% entry 65%; }
+    .chapter-title { animation-range: entry 10% entry 80%; }
+    @keyframes page-progress { to { transform: scaleX(1); } }
+    .chapter-nav::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 3px; background: var(--hot);
+      transform: scaleX(0); transform-origin: left; pointer-events: none;
+      animation: page-progress linear both; animation-timeline: scroll(root);
+    }
+  }
 }
