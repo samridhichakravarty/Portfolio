@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FocusEvent, type FormEvent, type PointerEvent } from 'react';
 import { ArrowDownToLine, ArrowLeft, ArrowRight, ArrowUp, ArrowUpRight, Check, Github, Linkedin, Mail, Shuffle, Sparkles, Star } from 'lucide-react';
+import Link from '@/components/site/Link';
 import { AnimatePresence, motion } from 'motion/react';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import ChapterFilm, { careerStops, type ChapterMoment } from './chapter-film';
@@ -9,10 +10,12 @@ import { placeBookCards } from './book-cards';
 import { scrollToElement, scrollToY } from './smooth-scroll';
 import { ChatPreview, PlatformPreview, RepoLink } from './playground';
 import { createSkillFlight } from './skill-flight';
+import { SITE } from '@/lib/site';
+import { STICKERS, collect, useAlbum } from '@/lib/collectibles';
 
-const email = 'chakravartysamridhi@gmail.com';
-const github = 'https://github.com/samridhichakravarty';
-const linkedin = 'https://www.linkedin.com/in/samridhi-chakravarty-45a5172a7/';
+const email = SITE.email;
+const github = SITE.github;
+const linkedin = SITE.linkedin;
 
 const stickerNames = { daisy: 'Daisy', burst: 'Starburst', heart: 'Heart' };
 type Sticker = keyof typeof stickerNames;
@@ -131,7 +134,7 @@ function About({ sticker, count }: { sticker: React.ReactNode; count: number }) 
                 <p>I like turning messy problems into web products people can use. My work spans full-stack development, AI integrations, and building features around what clients and users need.</p>
               </div>
               <div className="book-bio-tools">
-                <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/3</span>
+                <span className="sticker-count" aria-live="polite"><Star size={15} /> Sticker book {count}/{STICKERS.length}</span>
                 <button type="button" className="flip-note" aria-label="Turn field note" aria-expanded={note} aria-controls="scrapbook-note" onClick={() => setNote(!note)}>
                   <span>Field note</span>
                   <span className="flip-front">Turn the page <ArrowUpRight size={17} /></span>
@@ -444,7 +447,9 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
           <div className="contact-links post-links">
             <a href={github} target="_blank" rel="noreferrer"><Github size={18} /> GitHub</a>
             <a href={linkedin} target="_blank" rel="noreferrer"><Linkedin size={18} /> LinkedIn</a>
-            <a href="/media/Samridhi-Chakravarty-Resume.pdf" download><ArrowDownToLine size={18} /> Download résumé</a>
+            <a href={SITE.resume} download><ArrowDownToLine size={18} /> Download résumé</a>
+            <Link href="/recruiters"><ArrowUpRight size={18} /> Recruiter snapshot</Link>
+            <Link href="/freelance/start"><ArrowUpRight size={18} /> Start a project</Link>
           </div>
         </div>
         <div className="footer-bottom"><span>Samridhi Chakravarty · Jaipur, India</span><a href="#top">Back to top <ArrowUp size={16} /></a></div>
@@ -455,9 +460,8 @@ function Contact({ sticker }: { sticker: React.ReactNode }) {
 
 export default function Chapters() {
   const layout = useRef<HTMLDivElement>(null);
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const { stickers } = useAlbum();
   const desktop = useDesktopMotion();
-  const stored = useRef(false);
 
   useEffect(() => {
     if (!layout.current) return;
@@ -482,27 +486,6 @@ export default function Chapters() {
       cancelAnimationFrame(frame);
     };
   }, []);
-
-  useEffect(() => {
-    try {
-      const saved: unknown = JSON.parse(localStorage.getItem('portfolio-stickers') ?? '[]');
-      if (Array.isArray(saved)) {
-        setStickers([...new Set(saved.filter((name): name is Sticker => typeof name === 'string' && Object.hasOwn(stickerNames, name)))]);
-      }
-    } catch {
-      // The collection still works for this visit.
-    }
-    stored.current = true;
-  }, []);
-
-  function collect(name: Sticker) {
-    if (stickers.includes(name)) return;
-    const next = [...stickers, name];
-    setStickers(next);
-    if (stored.current) {
-      try { localStorage.setItem('portfolio-stickers', JSON.stringify(next)); } catch { /* Keep the session collection. */ }
-    }
-  }
 
   const sticker = (name: Sticker, draggable = false) => <Collectible name={name} collected={stickers.includes(name)} onCollect={collect} draggable={desktop && draggable} />;
 

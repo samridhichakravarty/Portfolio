@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-const targets = '.nav-contact, .post-submit, .post-links a, .post-email, .scroll-cue';
+const targets = '.nav-contact, .intro-actions .s-btn, .post-submit, .post-links a, .post-email, .scroll-cue';
 const pull = 0.25;
 const limit = 7;
 

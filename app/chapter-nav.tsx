@@ -1,18 +1,26 @@
 ﻿'use client';
 
+import Link from '@/components/site/Link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState, type MouseEvent } from 'react';
 import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { scrollToElement, scrollToY } from './smooth-scroll';
 
+// Story chapters live on the home page. Recruiters and Freelance are their own pages.
 const chapters = [
   ['top', 'Home'], ['about', 'About'], ['work', 'Work'],
   ['experience', 'Experience'], ['skills', 'Skills'], ['contact', 'Contact'],
 ] as const;
+const optional = new Set(['about', 'experience', 'skills']);
+const pages = [['/recruiters', 'Recruiters'], ['/freelance', 'Freelance']] as const;
 
 export default function ChapterNav() {
+  const pathname = usePathname();
+  const onHome = pathname === '/';
   const [active, setActive] = useState<string>('top');
 
   useEffect(() => {
+    if (!onHome) return;
     const sections = chapters.map(([id]) => document.getElementById(id));
     let frame = 0;
     function update() {
@@ -39,10 +47,10 @@ export default function ChapterNav() {
       window.removeEventListener('resize', schedule);
       window.removeEventListener('hashchange', schedule);
     };
-  }, []);
+  }, [onHome]);
 
   function navigate(event: MouseEvent<HTMLAnchorElement>, id: string) {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (!onHome || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const target = document.getElementById(id);
     if (!target) return;
     event.preventDefault();
@@ -55,11 +63,16 @@ export default function ChapterNav() {
 
   return (
     <header className="masthead chapter-nav">
-      <a className="brand" href="#top" onClick={event => navigate(event, 'top')} aria-label="Samridhi, back to the opening"><Sparkles size={23} strokeWidth={2.6} /><span>samridhi<span className="brand-dot">.</span></span></a>
-      <nav aria-label="Portfolio chapters">
-        {chapters.slice(0, -1).map(([id, label]) => <a key={id} href={'#' + id} onClick={event => navigate(event, id)} aria-current={active === id ? 'location' : undefined}>{label}</a>)}
+      <Link className="brand" href="/" onClick={event => navigate(event, 'top')} aria-label="Samridhi, home"><Sparkles size={23} strokeWidth={2.6} /><span>samridhi<span className="brand-dot">.</span></span></Link>
+      <nav aria-label="Main">
+        {chapters.slice(0, -1).map(([id, label]) => (
+          <Link key={id} className={optional.has(id) ? 'nav-opt' : undefined} href={id === 'top' ? '/' : '/#' + id} onClick={event => navigate(event, id)} aria-current={onHome && active === id ? 'location' : undefined}>{label}</Link>
+        ))}
+        {pages.map(([href, label]) => (
+          <Link key={href} href={href} aria-current={pathname.startsWith(href) ? 'page' : undefined}>{label}</Link>
+        ))}
       </nav>
-      <a className="nav-contact" href="#contact" onClick={event => navigate(event, 'contact')} aria-label="Contact, let’s talk" aria-current={active === 'contact' ? 'location' : undefined}>Let’s talk <ArrowUpRight size={16} /></a>
+      <Link className="nav-contact" href="/freelance/start" aria-label="Start a project" aria-current={pathname === '/freelance/start' ? 'page' : undefined}>Start a project <ArrowUpRight size={16} /></Link>
     </header>
   );
 }

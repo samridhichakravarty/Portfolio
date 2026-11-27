@@ -5,6 +5,8 @@ import { ArrowDown, Clapperboard } from 'lucide-react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
+import Link from '@/components/site/Link';
+import { SITE } from '@/lib/site';
 import { registerLenis, scrollToElement, scrollToY } from './smooth-scroll';
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
@@ -84,6 +86,7 @@ export default function Cinema() {
         };
         for (const [key, value] of Object.entries(css)) root.style.setProperty(key, String(value));
         root.dataset.reel = p >= 0.45 ? '2' : '1';
+        root.dataset.intro = introCut > 0.9 ? 'gone' : 'on';
         scrubOne.scrub(range(p, 0, 0.44));
         scrubTwo.scrub(range(p, 0.38, 0.93));
       };
@@ -111,6 +114,7 @@ export default function Cinema() {
         }
         delete root.dataset.scrub;
         delete root.dataset.reel;
+        delete root.dataset.intro;
         root.removeAttribute('style');
       };
     });
@@ -151,9 +155,19 @@ export default function Cinema() {
         </div>
 
         <div className="intro-copy">
-          <p className="intro-kicker"><span /> DEVELOPER PORTFOLIO</p>
+          <p className="intro-kicker"><span /> FULL-STACK DEVELOPER</p>
           <h1 id="intro-title">Hey, I’m<br /><em>Samridhi.</em></h1>
-          <p className="intro-subtitle">I build things for the internet.</p>
+          <p className="intro-subtitle">I build web apps, AI features and the backends behind them.</p>
+          <div className="intro-actions">
+            <Link className="s-btn" href="/recruiters">I’m hiring</Link>
+            <Link className="s-btn s-btn--paper" href="/freelance/start">I have a project</Link>
+          </div>
+          <p className="intro-links">
+            <a href={SITE.resume} download>Résumé</a>
+            <a href={SITE.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>
+            <a href={SITE.github} target="_blank" rel="noreferrer">GitHub</a>
+            <a href={`mailto:${SITE.email}`}>Email</a>
+          </p>
         </div>
 
         <div className="intertitle intertitle-one" aria-hidden="true">I build things<br />for the <em>internet.</em></div>

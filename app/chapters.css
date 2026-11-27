@@ -1,12 +1,12 @@
 ﻿.chapter-nav nav a { position: relative; }
-.chapter-nav nav a[aria-current="location"] { color: var(--deep-blue); }
+.chapter-nav nav a[aria-current="location"], .chapter-nav nav a[aria-current="page"] { color: var(--deep-blue); }
 .chapter-nav nav a::after {
   content: ""; position: absolute; height: 3px; border-radius: 6px; background: currentColor;
   left: 0; right: 0; bottom: .15rem; transform: scaleX(0); transform-origin: left;
   transition: transform .35s cubic-bezier(.16,1,.3,1);
 }
-.chapter-nav nav a:hover::after, .chapter-nav nav a[aria-current="location"]::after { transform: scaleX(1); }
-.chapter-nav .nav-contact[aria-current="location"] { background: var(--pink); }
+.chapter-nav nav a:hover::after, .chapter-nav nav a[aria-current="location"]::after, .chapter-nav nav a[aria-current="page"]::after { transform: scaleX(1); }
+.chapter-nav .nav-contact[aria-current="location"], .chapter-nav .nav-contact[aria-current="page"] { background: var(--pink); }
 
 .chapter { --chapter-progress: 0; position: relative; border-bottom: var(--line); }
 .chapter-inner { width: min(100%, 1590px); margin-inline: auto; padding: clamp(4.5rem, 9vw, 8.8rem) var(--gutter); position: relative; }

@@ -1,26 +1,20 @@
 ﻿import Cinema from './cinema';
-import ChapterNav from './chapter-nav';
 import Chapters from './chapters';
-import Magnetic from './magnetic';
-import './chapters.css';
+import ForkBand from '@/components/home/ForkBand';
 
 export default function Portfolio() {
   return (
     <>
-      <a className="skip-link" href="#about">Skip to portfolio</a>
-      <ChapterNav />
-      <Magnetic />
-      <main>
-        <Cinema />
-        <div className="marquee" aria-hidden="true">
-          <div>
-            {Array.from({ length: 4 }, (_, index) => (
-              <span className="marquee-group" key={index}>BUILD <b>✦</b> MAKE <b>✿</b> BREAK <b>✦</b> REPEAT <b>✿</b></span>
-            ))}
-          </div>
+      <Cinema />
+      <div className="marquee" aria-hidden="true">
+        <div>
+          {Array.from({ length: 4 }, (_, index) => (
+            <span className="marquee-group" key={index}>BUILD <b>✦</b> MAKE <b>✿</b> BREAK <b>✦</b> REPEAT <b>✿</b></span>
+          ))}
         </div>
-        <Chapters />
-      </main>
+      </div>
+      <ForkBand />
+      <Chapters />
     </>
   );
 }
