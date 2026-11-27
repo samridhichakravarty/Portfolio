@@ -3,6 +3,7 @@ import { Marquee } from "@/components/home/Marquee";
 import { WorkCartridges } from "@/components/home/WorkCartridges";
 import { Skills } from "@/components/home/Skills";
 import { Journey } from "@/components/home/Journey";
+import { PlayTeaser } from "@/components/home/PlayTeaser";
 import { ContactCta } from "@/components/home/ContactCta";
 
 export default function HomePage() {
@@ -12,6 +13,7 @@ export default function HomePage() {
       <Marquee />
       <WorkCartridges />
       <Skills />
+      <PlayTeaser />
       <Journey />
       <ContactCta />
     </>

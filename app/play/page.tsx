@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AlbumGrid } from "@/components/games/AlbumGrid";
+import { Games } from "@/components/games/LazyGames";
 import { breadcrumbLd } from "@/lib/schema";
 import { JsonLd } from "@/components/site/JsonLd";
 
@@ -22,6 +23,7 @@ export default function PlayPage() {
       <p className="mt-5 max-w-2xl text-lg text-muted-2">
         Games are totally optional. Each one drops a sticker into your album. Prefer calm? <Link href="/hire" className="text-pink-soft underline">Skip straight to the brief</Link>.
       </p>
+      <div className="mt-12"><Games /></div>
       <section id="album" aria-labelledby="album-title" className="mt-16 scroll-mt-28">
         <h2 id="album-title" className="mb-6 text-3xl font-bold">Sticker album</h2>
         <AlbumGrid />

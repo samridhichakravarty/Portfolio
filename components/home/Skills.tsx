@@ -1,5 +1,6 @@
 import { SKILL_GROUPS } from "@/lib/data";
 import { Reveal } from "@/components/site/Reveal";
+import { SkillGacha } from "@/components/games/SkillGacha";
 
 export function Skills() {
   return (
@@ -10,7 +11,9 @@ export function Skills() {
           What I <span className="gradient-text">work with</span>
         </h2>
       </Reveal>
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-10"><SkillGacha /></div>
+      <h3 className="mt-14 font-display text-2xl font-semibold">The full list</h3>
+      <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {SKILL_GROUPS.map((group, index) => (
           <Reveal key={group.name} delay={index * 0.08} className="h-full">
             <section className="card h-full p-6" aria-labelledby={`skills-${index}`}>
